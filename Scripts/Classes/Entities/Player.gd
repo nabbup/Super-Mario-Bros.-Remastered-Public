@@ -280,9 +280,16 @@ func editor_level_start() -> void:
 func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("debug_reload"):
 		set_power_state_frame()
-	if Input.is_action_just_pressed("debug_noclip") and Global.debug_mode:
-		state_machine.transition_to("NoClip")
-		Global.log_comment("NOCLIP Enabled")
+
+	# guzlad: noclip without dev only works while playtesting.
+	if (Input.is_action_just_pressed("debug_noclip") or Input.is_action_just_pressed("jump_0")) and ((Global.debug_mode) or (Global.level_editor_is_playtesting())):
+		if state_machine.is_state("NoClip"):
+			state_machine.transition_to("Normal")
+			Global.log_comment("NOCLIP Disabled")
+		elif !Input.is_action_just_pressed("jump_0") and !state_machine.is_state("NoClip"):
+			state_machine.transition_to("NoClip")
+			Global.log_comment("NOCLIP Enabled")
+
 	up_direction = -gravity_vector
 	handle_directions()
 	handle_block_collision_detection()
@@ -438,7 +445,7 @@ func enemy_bounce_off(add_combo := true, award_score := true) -> void:
 func add_stomp_combo(award_score := true) -> void:
 	if stomp_combo >= 10:
 		if award_score:
-			if Global.current_game_mode == Global.GameMode.CHALLENGE or Settings.file.difficulty.inf_lives:
+			if [Global.GameMode.CHALLENGE, Global.GameMode.BOO_RACE].has(Global.current_gamemode) or Settings.file.difficulty.inf_lives:
 				Global.score += 10000
 				score_note_spawner.spawn_note(10000)
 			else:
